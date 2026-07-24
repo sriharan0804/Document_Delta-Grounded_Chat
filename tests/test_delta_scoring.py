@@ -198,3 +198,61 @@ def test_negative_weight_is_rejected() -> None:
             spatial_weight=0.3,
             type_weight=-0.1,
         )
+
+def test_spatial_similarity_is_one_for_same_position() -> None:
+    bbox = BoundingBox(
+        x0=0.10,
+        y0=0.10,
+        x1=0.20,
+        y1=0.20,
+    )
+
+    similarity = (
+        ElementSimilarityScorer.spatial_similarity(
+            bbox,
+            bbox,
+        )
+    )
+
+    assert similarity == 1.0
+
+
+def test_spatial_similarity_is_zero_for_distant_elements() -> None:
+    before_bbox = BoundingBox(
+        x0=0.05,
+        y0=0.05,
+        x1=0.10,
+        y1=0.10,
+    )
+
+    after_bbox = BoundingBox(
+        x0=0.80,
+        y0=0.80,
+        x1=0.85,
+        y1=0.85,
+    )
+
+    similarity = (
+        ElementSimilarityScorer.spatial_similarity(
+            before_bbox,
+            after_bbox,
+        )
+    )
+
+    assert similarity == 0.0
+
+
+def test_center_distance_detects_identical_position() -> None:
+    bbox = BoundingBox(
+        x0=0.20,
+        y0=0.30,
+        x1=0.30,
+        y1=0.40,
+    )
+
+    distance = ElementSimilarityScorer.center_distance(
+        bbox,
+        bbox,
+    )
+
+    assert distance == 0.0

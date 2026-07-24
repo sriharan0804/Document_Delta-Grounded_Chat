@@ -10,7 +10,6 @@ from src.delta.models import MatchScore
 
 
 class ElementSimilarityScorer:
-    
 
     def __init__(
         self,
@@ -26,7 +25,9 @@ class ElementSimilarityScorer:
         )
 
         if any(weight < 0 for weight in weights):
-            raise ValueError("Similarity weights cannot be negative")
+            raise ValueError(
+                "Similarity weights cannot be negative"
+            )
 
         total_weight = sum(weights)
 
@@ -70,7 +71,10 @@ class ElementSimilarityScorer:
             text_similarity=text_similarity,
             spatial_similarity=spatial_similarity,
             type_similarity=type_similarity,
-            total_score=max(0.0, min(1.0, total_score)),
+            total_score=max(
+                0.0,
+                min(1.0, total_score),
+            ),
         )
 
     @staticmethod
@@ -79,10 +83,15 @@ class ElementSimilarityScorer:
         after_text: str,
     ) -> float:
         normalized_before = (
-            ElementSimilarityScorer._normalize_text(before_text)
+            ElementSimilarityScorer._normalize_text(
+                before_text
+            )
         )
+
         normalized_after = (
-            ElementSimilarityScorer._normalize_text(after_text)
+            ElementSimilarityScorer._normalize_text(
+                after_text
+            )
         )
 
         if not normalized_before and not normalized_after:
@@ -105,43 +114,61 @@ class ElementSimilarityScorer:
         before_bbox: BoundingBox,
         after_bbox: BoundingBox,
     ) -> float:
-        
-
-        before_center_x = (
-            before_bbox.x0 + before_bbox.x1
-        ) / 2
-
-        before_center_y = (
-            before_bbox.y0 + before_bbox.y1
-        ) / 2
-
-        after_center_x = (
-            after_bbox.x0 + after_bbox.x1
-        ) / 2
-
-        after_center_y = (
-            after_bbox.y0 + after_bbox.y1
-        ) / 2
-
-        horizontal_distance = abs(
-            before_center_x - after_center_x
+        distance = ElementSimilarityScorer.center_distance(
+            before_bbox,
+            after_bbox,
         )
 
-        vertical_distance = abs(
-            before_center_y - after_center_y
-        )
+        # At 25% of normalized page distance or more,
+        # the elements receive no spatial similarity.
+        maximum_relevant_distance = 0.25
 
-        # Manhattan distance can range from 0 to 2 because coordinates
-        # are normalized between 0 and 1.
-        normalized_distance = (
-            horizontal_distance + vertical_distance
-        ) / 2
+        similarity = (
+            1.0
+            - distance / maximum_relevant_distance
+        )
 
         return max(
             0.0,
-            min(1.0, 1.0 - normalized_distance),
+            min(1.0, similarity),
         )
 
     @staticmethod
+    def center_distance(
+        before_bbox: BoundingBox,
+        after_bbox: BoundingBox,
+    ) -> float:
+        before_center_x = (
+            before_bbox.x0 + before_bbox.x1
+        ) / 2.0
+
+        before_center_y = (
+            before_bbox.y0 + before_bbox.y1
+        ) / 2.0
+
+        after_center_x = (
+            after_bbox.x0 + after_bbox.x1
+        ) / 2.0
+
+        after_center_y = (
+            after_bbox.y0 + after_bbox.y1
+        ) / 2.0
+
+        horizontal_distance = (
+            before_center_x - after_center_x
+        )
+
+        vertical_distance = (
+            before_center_y - after_center_y
+        )
+
+        return (
+            horizontal_distance**2
+            + vertical_distance**2
+        ) ** 0.5
+
+    @staticmethod
     def _normalize_text(text: str) -> str:
-        return " ".join(text.upper().split())
+        return " ".join(
+            text.upper().split()
+        )

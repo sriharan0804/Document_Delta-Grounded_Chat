@@ -112,12 +112,14 @@ class ElementAlignmentService:
                 element
                 for page in before.pages
                 for element in page.elements
+                if element.content.strip()
             ]
-    
+
             after_elements = [
                 element
                 for page in after.pages
                 for element in page.elements
+                if element.content.strip()
             ]
     
             return self.align(
@@ -145,6 +147,32 @@ class ElementAlignmentService:
                     before,
                     after,
                 )
+                center_distance = (
+                    self._scorer.center_distance(
+                        before.bbox,
+                        after.bbox,
+                    )
+                )
+
+                # Do not pair elements from unrelated parts of the page,
+                # even when their text is identical.
+                if center_distance > 0.40:
+                    continue
+
+                is_low_information_match = (
+                    self._is_low_information_text(
+                        before.content
+                    )
+                    or self._is_low_information_text(
+                        after.content
+                    )
+                )
+
+                if (
+                    is_low_information_match
+                    and score.spatial_similarity < 0.85
+                ):
+                    continue
 
                 if (
                     score.text_similarity
@@ -183,4 +211,19 @@ class ElementAlignmentService:
 
         return True
 
-    
+    @staticmethod
+    def _is_low_information_text(content: str) -> bool:
+        normalized = content.strip()
+
+        if not normalized:
+            return True
+
+        # Single-character drawing labels such as P, U and C are ambiguous.
+        if len(normalized) == 1:
+            return True
+
+        # Very short numbers such as 26 or 40 may appear many times.
+        if normalized.isdigit() and len(normalized) <= 2:
+            return True
+
+        return False

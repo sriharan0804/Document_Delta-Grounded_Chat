@@ -116,7 +116,7 @@ class DoclingCanonicalMapper:
                     DocumentElement(
                         element_id=element_id,
                         element_type=element_type,
-                        text=text,
+                        content=text,
                         bbox=canonical_bbox,
                         metadata=element_metadata,
                     )
@@ -171,6 +171,9 @@ class DoclingCanonicalMapper:
     def _extract_text(item: Any) -> str | None:
         """
         Extract and normalize textual content from a Docling item.
+
+        Empty, whitespace-only and non-string values are excluded so
+        meaningless graphical objects do not become canonical elements.
         """
 
         raw_text = getattr(item, "text", None)
@@ -180,7 +183,10 @@ class DoclingCanonicalMapper:
 
         normalized_text = " ".join(raw_text.split())
 
-        return normalized_text or None
+        if not normalized_text:
+            return None
+
+        return normalized_text
 
     @staticmethod
     def _map_bounding_box(
@@ -344,3 +350,5 @@ class DoclingCanonicalMapper:
     @staticmethod
     def _clamp(value: float) -> float:
         return max(0.0, min(1.0, value))
+
+    
