@@ -1,0 +1,146 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# =========================
+# Environment variables
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Testing and coverage
+# =========================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+test-results/
+.tox/
+.nox/
+
+# =========================
+# Type checking and linting
+# =========================
+.mypy_cache/
+.pyright/
+.ruff_cache/
+.dmypy.json
+
+# =========================
+# Build and packaging
+# =========================
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# =========================
+# IDE and editor files
+# =========================
+.vscode/
+.idea/
+*.code-workspace
+*.swp
+*.swo
+
+# =========================
+# Operating system files
+# =========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =========================
+# Logs and temporary files
+# =========================
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.temp
+
+# =========================
+# Application-generated data
+# =========================
+uploads/
+outputs/
+artifacts/
+cache/
+data/processed/
+data/temp/
+
+# =========================
+# Document files used locally
+# =========================
+*.pdf
+*.dwg
+*.dxf
+
+# Keep sample assessment documents if needed
+!tests/fixtures/**/*.pdf
+!tests/fixtures/**/*.dwg
+!tests/fixtures/**/*.dxf
+!samples/**/*.pdf
+!samples/**/*.dwg
+!samples/**/*.dxf
+
+# =========================
+# OCR and document processing
+# =========================
+ocr_output/
+extracted_images/
+page_images/
+rendered_pages/
+
+# =========================
+# Vector databases and indexes
+# =========================
+chroma_db/
+.chroma/
+faiss_index/
+vector_store/
+indexes/
+
+# =========================
+# Local databases
+# =========================
+*.db
+*.sqlite
+*.sqlite3
+
+# =========================
+# Model and embedding cache
+# =========================
+models/
+model_cache/
+.huggingface/
+sentence_transformers_cache/
+
+# =========================
+# Jupyter Notebook
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# Secrets and credentials
+# =========================
+credentials.json
+service-account.json
+*.pem
+*.key
+secrets/
