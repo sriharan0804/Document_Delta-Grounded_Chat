@@ -16,7 +16,7 @@ class ChangeClassificationService:
     def __init__(
         self,
         *,
-        movement_threshold: float = 0.015,
+        movement_threshold: float = 0.03,
     ) -> None:
         if not 0.0 <= movement_threshold <= 1.0:
             raise ValueError(
