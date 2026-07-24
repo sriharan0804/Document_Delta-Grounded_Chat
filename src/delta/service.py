@@ -7,7 +7,7 @@ from src.delta.models import DocumentDelta
 
 
 class DocumentDeltaService:
-    
+   
 
     def __init__(
         self,
@@ -38,8 +38,8 @@ class DocumentDeltaService:
             after,
         )
 
-        return self._classification_service.classify_documents(
-            before=before,
-            after=after,
+        return self._classification_service.classify(
+            before_pid=before.pid,
+            after_pid=after.pid,
             alignment=alignment,
         )
