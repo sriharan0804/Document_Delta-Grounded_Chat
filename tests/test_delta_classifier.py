@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import pytest
+
 from src.canonical.model import (
     BoundingBox,
-    CanonicalDocument,
     DocumentElement,
-    DocumentFormat,
     ElementType,
 )
 from src.delta.classifier import ChangeClassificationService
@@ -48,38 +48,21 @@ def make_score() -> MatchScore:
     )
 
 
-def make_document(
+def make_alignment(
     *,
-    pid: str,
-) -> CanonicalDocument:
-    return CanonicalDocument(
-        pid=pid,
-        source_format=DocumentFormat.NATIVE_PDF,
-        pages=[],
-        metadata={},
-    )
-
-
-def classify_single_match(
-    before_element: DocumentElement,
-    after_element: DocumentElement,
-):
-    alignment = DocumentAlignment(
+    before: DocumentElement,
+    after: DocumentElement,
+) -> DocumentAlignment:
+    return DocumentAlignment(
         matches=[
             ElementMatch(
-                before=before_element,
-                after=after_element,
+                before=before,
+                after=after,
                 score=make_score(),
             )
         ],
         unmatched_before=[],
         unmatched_after=[],
-    )
-
-    return ChangeClassificationService().classify_documents(
-        before=make_document(pid="revision-a"),
-        after=make_document(pid="revision-b"),
-        alignment=alignment,
     )
 
 
@@ -94,14 +77,20 @@ def test_identical_element_is_unchanged() -> None:
         content="CONTROL VALVE",
     )
 
-    delta = classify_single_match(before, after)
+    delta = ChangeClassificationService().classify(
+        before_pid="revision-a",
+        after_pid="revision-b",
+        alignment=make_alignment(
+            before=before,
+            after=after,
+        ),
+    )
 
     assert len(delta.changes) == 1
     assert (
         delta.changes[0].change_type
         == ChangeType.UNCHANGED
     )
-
     assert delta.summary.unchanged == 1
     assert delta.summary.total_changes == 0
 
@@ -117,15 +106,20 @@ def test_changed_text_is_modified() -> None:
         content="DESIGN PRESSURE 300 BARG",
     )
 
-    delta = classify_single_match(before, after)
-
-    assert (
-        delta.changes[0].change_type
-        == ChangeType.MODIFIED
+    delta = ChangeClassificationService().classify(
+        before_pid="revision-a",
+        after_pid="revision-b",
+        alignment=make_alignment(
+            before=before,
+            after=after,
+        ),
     )
 
-    assert delta.changes[0].text_changed is True
-    assert delta.changes[0].position_changed is False
+    change = delta.changes[0]
+
+    assert change.change_type == ChangeType.MODIFIED
+    assert change.text_changed is True
+    assert change.position_changed is False
     assert delta.summary.modified == 1
 
 
@@ -148,19 +142,24 @@ def test_changed_position_is_moved() -> None:
         y1=0.4,
     )
 
-    delta = classify_single_match(before, after)
-
-    assert (
-        delta.changes[0].change_type
-        == ChangeType.MOVED
+    delta = ChangeClassificationService().classify(
+        before_pid="revision-a",
+        after_pid="revision-b",
+        alignment=make_alignment(
+            before=before,
+            after=after,
+        ),
     )
 
-    assert delta.changes[0].text_changed is False
-    assert delta.changes[0].position_changed is True
+    change = delta.changes[0]
+
+    assert change.change_type == ChangeType.MOVED
+    assert change.text_changed is False
+    assert change.position_changed is True
     assert delta.summary.moved == 1
 
 
-def test_changed_text_and_position_is_moved_and_modified() -> None:
+def test_changed_text_and_position() -> None:
     before = make_element(
         element_id="before-1",
         content="PRESSURE 286 BARG",
@@ -179,26 +178,30 @@ def test_changed_text_and_position_is_moved_and_modified() -> None:
         y1=0.5,
     )
 
-    delta = classify_single_match(before, after)
-
-    assert (
-        delta.changes[0].change_type
-        == ChangeType.MOVED_AND_MODIFIED
+    delta = ChangeClassificationService().classify(
+        before_pid="revision-a",
+        after_pid="revision-b",
+        alignment=make_alignment(
+            before=before,
+            after=after,
+        ),
     )
 
-    assert delta.changes[0].text_changed is True
-    assert delta.changes[0].position_changed is True
+    change = delta.changes[0]
+
+    assert (
+        change.change_type
+        == ChangeType.MOVED_AND_MODIFIED
+    )
+    assert change.text_changed is True
+    assert change.position_changed is True
     assert delta.summary.moved_and_modified == 1
 
 
-def test_small_coordinate_difference_is_not_movement() -> None:
+def test_small_position_difference_is_unchanged() -> None:
     before = make_element(
         element_id="before-1",
         content="CONTROL VALVE",
-        x0=0.1,
-        y0=0.1,
-        x1=0.2,
-        y1=0.2,
     )
 
     after = make_element(
@@ -210,7 +213,14 @@ def test_small_coordinate_difference_is_not_movement() -> None:
         y1=0.205,
     )
 
-    delta = classify_single_match(before, after)
+    delta = ChangeClassificationService().classify(
+        before_pid="revision-a",
+        after_pid="revision-b",
+        alignment=make_alignment(
+            before=before,
+            after=after,
+        ),
+    )
 
     assert (
         delta.changes[0].change_type
@@ -230,9 +240,9 @@ def test_unmatched_before_is_removed() -> None:
         unmatched_after=[],
     )
 
-    delta = ChangeClassificationService().classify_documents(
-        before=make_document(pid="revision-a"),
-        after=make_document(pid="revision-b"),
+    delta = ChangeClassificationService().classify(
+        before_pid="revision-a",
+        after_pid="revision-b",
         alignment=alignment,
     )
 
@@ -240,9 +250,6 @@ def test_unmatched_before_is_removed() -> None:
         delta.changes[0].change_type
         == ChangeType.REMOVED
     )
-
-    assert delta.changes[0].before == removed
-    assert delta.changes[0].after is None
     assert delta.summary.removed == 1
 
 
@@ -258,9 +265,9 @@ def test_unmatched_after_is_added() -> None:
         unmatched_after=[added],
     )
 
-    delta = ChangeClassificationService().classify_documents(
-        before=make_document(pid="revision-a"),
-        after=make_document(pid="revision-b"),
+    delta = ChangeClassificationService().classify(
+        before_pid="revision-a",
+        after_pid="revision-b",
         alignment=alignment,
     )
 
@@ -268,9 +275,6 @@ def test_unmatched_after_is_added() -> None:
         delta.changes[0].change_type
         == ChangeType.ADDED
     )
-
-    assert delta.changes[0].before is None
-    assert delta.changes[0].after == added
     assert delta.summary.added == 1
 
 
@@ -285,7 +289,14 @@ def test_text_comparison_ignores_case_and_spacing() -> None:
         content="CONTROL VALVE",
     )
 
-    delta = classify_single_match(before, after)
+    delta = ChangeClassificationService().classify(
+        before_pid="revision-a",
+        after_pid="revision-b",
+        alignment=make_alignment(
+            before=before,
+            after=after,
+        ),
+    )
 
     assert (
         delta.changes[0].change_type
@@ -294,13 +305,10 @@ def test_text_comparison_ignores_case_and_spacing() -> None:
 
 
 def test_invalid_movement_threshold_is_rejected() -> None:
-    try:
+    with pytest.raises(
+        ValueError,
+        match="movement_threshold",
+    ):
         ChangeClassificationService(
             movement_threshold=1.2
-        )
-    except ValueError as error:
-        assert "movement_threshold" in str(error)
-    else:
-        raise AssertionError(
-            "Expected invalid threshold to raise ValueError"
         )

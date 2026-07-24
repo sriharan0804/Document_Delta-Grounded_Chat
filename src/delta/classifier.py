@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-from src.canonical.model import (
-    BoundingBox,
-    CanonicalDocument,
-    DocumentElement,
-)
+from src.canonical.model import BoundingBox
 from src.delta.models import (
     ChangeType,
     DeltaSummary,
@@ -16,7 +12,6 @@ from src.delta.models import (
 
 
 class ChangeClassificationService:
-    
 
     def __init__(
         self,
@@ -30,25 +25,23 @@ class ChangeClassificationService:
 
         self._movement_threshold = movement_threshold
 
-    def classify_documents(
+    def classify(
         self,
         *,
-        before: CanonicalDocument,
-        after: CanonicalDocument,
+        before_pid: str,
+        after_pid: str,
         alignment: DocumentAlignment,
     ) -> DocumentDelta:
         changes: list[ElementDelta] = []
 
         for match in alignment.matches:
-            changes.append(
-                self._classify_match(match)
-            )
+            changes.append(self._classify_match(match))
 
-        for removed_element in alignment.unmatched_before:
+        for element in alignment.unmatched_before:
             changes.append(
                 ElementDelta(
                     change_type=ChangeType.REMOVED,
-                    before=removed_element,
+                    before=element,
                     after=None,
                     match_score=None,
                     text_changed=False,
@@ -56,27 +49,25 @@ class ChangeClassificationService:
                 )
             )
 
-        for added_element in alignment.unmatched_after:
+        for element in alignment.unmatched_after:
             changes.append(
                 ElementDelta(
                     change_type=ChangeType.ADDED,
                     before=None,
-                    after=added_element,
+                    after=element,
                     match_score=None,
                     text_changed=False,
                     position_changed=False,
                 )
             )
 
-        changes.sort(key=self._change_sort_key)
-
-        summary = self._build_summary(changes)
+        changes.sort(key=self._sort_key)
 
         return DocumentDelta(
-            before_pid=before.pid,
-            after_pid=after.pid,
+            before_pid=before_pid,
+            after_pid=after_pid,
             changes=changes,
-            summary=summary,
+            summary=self._build_summary(changes),
         )
 
     def _classify_match(
@@ -84,8 +75,8 @@ class ChangeClassificationService:
         match: ElementMatch,
     ) -> ElementDelta:
         text_changed = not self._same_text(
-            match.before,
-            match.after,
+            match.before.content,
+            match.after.content,
         )
 
         position_changed = self._position_changed(
@@ -95,13 +86,10 @@ class ChangeClassificationService:
 
         if text_changed and position_changed:
             change_type = ChangeType.MOVED_AND_MODIFIED
-
         elif text_changed:
             change_type = ChangeType.MODIFIED
-
         elif position_changed:
             change_type = ChangeType.MOVED
-
         else:
             change_type = ChangeType.UNCHANGED
 
@@ -116,39 +104,29 @@ class ChangeClassificationService:
 
     @staticmethod
     def _same_text(
-        before: DocumentElement,
-        after: DocumentElement,
+        before_text: str,
+        after_text: str,
     ) -> bool:
-        before_text = " ".join(
-            before.content.upper().split()
+        normalized_before = " ".join(
+            before_text.upper().split()
         )
 
-        after_text = " ".join(
-            after.content.upper().split()
+        normalized_after = " ".join(
+            after_text.upper().split()
         )
 
-        return before_text == after_text
+        return normalized_before == normalized_after
 
     def _position_changed(
         self,
         before: BoundingBox,
         after: BoundingBox,
     ) -> bool:
-        before_center_x = (
-            before.x0 + before.x1
-        ) / 2
+        before_center_x = (before.x0 + before.x1) / 2
+        before_center_y = (before.y0 + before.y1) / 2
 
-        before_center_y = (
-            before.y0 + before.y1
-        ) / 2
-
-        after_center_x = (
-            after.x0 + after.x1
-        ) / 2
-
-        after_center_y = (
-            after.y0 + after.y1
-        ) / 2
+        after_center_x = (after.x0 + after.x1) / 2
+        after_center_y = (after.y0 + after.y1) / 2
 
         horizontal_movement = abs(
             before_center_x - after_center_x
@@ -158,12 +136,10 @@ class ChangeClassificationService:
             before_center_y - after_center_y
         )
 
-        maximum_movement = max(
+        return max(
             horizontal_movement,
             vertical_movement,
-        )
-
-        return maximum_movement > self._movement_threshold
+        ) > self._movement_threshold
 
     @staticmethod
     def _build_summary(
@@ -189,7 +165,7 @@ class ChangeClassificationService:
         )
 
     @staticmethod
-    def _change_sort_key(
+    def _sort_key(
         change: ElementDelta,
     ) -> tuple[str, str]:
         element = change.after or change.before
