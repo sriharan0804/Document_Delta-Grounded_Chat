@@ -139,6 +139,56 @@ Document-Delta-Grounded-Chat/
 | Server | Uvicorn |
 | Data Exchange | JSON |
 
+## Design Decisions
+
+### Canonical Representation
+
+Instead of comparing documents directly, every input document is transformed into a common canonical representation.
+ This decouples document ingestion from downstream processing and allows new document formats to be added without 
+ changing the alignment or comparison pipeline.
+
+### Deterministic Delta Engine
+
+The delta engine uses deterministic alignment and comparison algorithms rather than an LLM. This ensures reproducible
+ outputs, consistent evaluation, and avoids hallucinated changes.
+
+### Grounded Chat
+
+The chat layer retrieves only information present in the generated delta report and returns answers with citations.
+ This guarantees traceability and prevents unsupported responses.
+
+## Trade-offs
+
+To keep the implementation focused, the project prioritizes:
+
+- Native PDF support over implementing all formats.
+- Deterministic retrieval over LLM-based generation.
+- Structured JSON reports instead of visual markup overlays.
+- Modular architecture over UI complexity.
+
+These choices improve reproducibility, simplify evaluation, and make the system easier to extend.
+
+## Current Limitations
+
+- OCR accuracy depends on scan quality.
+- Retrieval is keyword-based rather than embedding-based.
+- Only native PDF ingestion is fully implemented.
+- Visual delta markup is not included.
+
+## Evaluation
+
+The repository includes an evaluation framework for measuring:
+
+- Delta precision
+- Delta recall
+- Delta F1
+- Grounded answer correctness
+- Citation accuracy
+
+Evaluation datasets are located in:
+
+data/evaluation/
+
 ### Project Organization
 
 The repository follows a modular architecture in which each stage of the document-processing pipeline is implemented 
@@ -319,3 +369,21 @@ The project includes a lightweight Streamlit application that provides an intera
 6. (Optional) Ask grounded questions about the detected changes.
 
 The Streamlit interface communicates with the FastAPI backend, which performs document ingestion, alignment, change detection, and report generation.
+
+## Delta Report Generation
+
+After comparing the original and revised documents, the system generates a structured JSON delta report.
+
+Each report contains:
+
+- a unique report identifier
+- summary counts for each change type
+- significant element-level changes
+- before and after content
+- element metadata
+- evidence used by the grounded chat service
+
+Generated reports are stored in:
+
+```text
+outputs/api_reports/
