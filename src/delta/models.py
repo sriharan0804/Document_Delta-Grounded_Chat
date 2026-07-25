@@ -75,6 +75,9 @@ class ElementDelta(BaseModel):
     text_changed: bool = False
     position_changed: bool = False
 
+    significant: bool = True
+    significance_reason: str | None = None
+
 
 class DeltaSummary(BaseModel):
    

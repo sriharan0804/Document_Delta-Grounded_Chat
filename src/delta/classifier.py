@@ -35,9 +35,19 @@ class ChangeClassificationService:
         changes: list[ElementDelta] = []
 
         for match in alignment.matches:
-            changes.append(self._classify_match(match))
+            changes.append(
+                self._classify_match(match)
+            )
 
         for element in alignment.unmatched_before:
+            significant, significance_reason = (
+                self._assess_significance(
+                    change_type=ChangeType.REMOVED,
+                    before_content=element.content,
+                    after_content=None,
+                )
+            )
+
             changes.append(
                 ElementDelta(
                     change_type=ChangeType.REMOVED,
@@ -46,10 +56,20 @@ class ChangeClassificationService:
                     match_score=None,
                     text_changed=False,
                     position_changed=False,
+                    significant=significant,
+                    significance_reason=significance_reason,
                 )
             )
 
         for element in alignment.unmatched_after:
+            significant, significance_reason = (
+                self._assess_significance(
+                    change_type=ChangeType.ADDED,
+                    before_content=None,
+                    after_content=element.content,
+                )
+            )
+
             changes.append(
                 ElementDelta(
                     change_type=ChangeType.ADDED,
@@ -58,6 +78,8 @@ class ChangeClassificationService:
                     match_score=None,
                     text_changed=False,
                     position_changed=False,
+                    significant=significant,
+                    significance_reason=significance_reason,
                 )
             )
 
@@ -93,6 +115,14 @@ class ChangeClassificationService:
         else:
             change_type = ChangeType.UNCHANGED
 
+        significant, significance_reason = (
+            self._assess_significance(
+                change_type=change_type,
+                before_content=match.before.content,
+                after_content=match.after.content,
+            )
+        )
+
         return ElementDelta(
             change_type=change_type,
             before=match.before,
@@ -100,6 +130,8 @@ class ChangeClassificationService:
             match_score=match.score,
             text_changed=text_changed,
             position_changed=position_changed,
+            significant=significant,
+            significance_reason=significance_reason,
         )
 
     @staticmethod
@@ -122,11 +154,21 @@ class ChangeClassificationService:
         before: BoundingBox,
         after: BoundingBox,
     ) -> bool:
-        before_center_x = (before.x0 + before.x1) / 2
-        before_center_y = (before.y0 + before.y1) / 2
+        before_center_x = (
+            before.x0 + before.x1
+        ) / 2
 
-        after_center_x = (after.x0 + after.x1) / 2
-        after_center_y = (after.y0 + after.y1) / 2
+        before_center_y = (
+            before.y0 + before.y1
+        ) / 2
+
+        after_center_x = (
+            after.x0 + after.x1
+        ) / 2
+
+        after_center_y = (
+            after.y0 + after.y1
+        ) / 2
 
         horizontal_movement = abs(
             before_center_x - after_center_x
@@ -140,6 +182,37 @@ class ChangeClassificationService:
             horizontal_movement,
             vertical_movement,
         ) > self._movement_threshold
+
+    @staticmethod
+    def _assess_significance(
+        change_type: ChangeType,
+        before_content: str | None,
+        after_content: str | None,
+    ) -> tuple[bool, str | None]:
+        content = after_content or before_content or ""
+        normalized = content.strip()
+
+        if change_type == ChangeType.UNCHANGED:
+            return False, "unchanged element"
+
+        if not normalized:
+            return False, "empty content"
+
+        if len(normalized) == 1:
+            return False, "single-character drawing label"
+
+        if normalized.isdigit() and len(normalized) <= 2:
+            return False, "short numeric drawing label"
+
+        if normalized in {
+            '1"',
+            '2"',
+            '3"',
+            '4"',
+        }:
+            return False, "isolated pipe-size label"
+
+        return True, None
 
     @staticmethod
     def _build_summary(
