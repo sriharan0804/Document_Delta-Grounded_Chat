@@ -1,0 +1,57 @@
+﻿
+{
+  "dataset_id": "pressure-revision-pair",
+  "description": "Small labeled evaluation set for pressure-related revision changes.",
+  "before_pid": "revision-a",
+  "after_pid": "revision-b",
+  "evaluation_scope": {
+    "content_terms": [
+      "PRESSURE"
+    ],
+    "page_numbers": []
+  },
+  "expected_changes": [
+    {
+      "change_id": "pressure-design-change",
+      "change_type": "modified",
+      "before_content": "DESIGN PRESSURE / TEMPERATURE IN EXTERNAL SYSTEM DOWNSTREAM",
+      "after_content": "22. DESIGN PRESSURE IN EXTERNAL SYSTEM DOWNSTREAM COMPRESSOR 257 BARG.",
+      "page_number": null
+    },
+    {
+      "change_id": "pressure-setting-added-1",
+      "change_type": "added",
+      "before_content": null,
+      "after_content": "SET PRESSURE=10 bar g",
+      "page_number": null
+    },
+    {
+      "change_id": "pressure-setting-added-2",
+      "change_type": "added",
+      "before_content": null,
+      "after_content": "SET PRESSURE=10 barg",
+      "page_number": null
+    }
+  ],
+  "chat_cases": [
+    {
+      "case_id": "pressure-question",
+      "question": "What pressure values changed?",
+      "expected_grounded": true,
+      "expected_terms": [
+        "PRESSURE",
+        "257",
+        "BARG"
+      ],
+      "expected_citation_terms": []
+    },
+    {
+      "case_id": "unsupported-approval-question",
+      "question": "Who approved this revision?",
+      "expected_grounded": false,
+      "expected_terms": [],
+      "expected_citation_terms": []
+    }
+  ]
+}
+

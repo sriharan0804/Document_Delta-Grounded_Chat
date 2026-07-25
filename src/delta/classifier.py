@@ -1,4 +1,5 @@
 from __future__ import annotations
+import re
 
 from src.canonical.model import BoundingBox
 from src.delta.models import (
@@ -11,6 +12,25 @@ from src.delta.models import (
 )
 
 
+def normalize_for_change_detection(
+    value: str | None,
+) -> str:
+    
+
+    if value is None:
+        return ""
+
+    normalized = " ".join(
+        value.upper().split()
+    )
+
+    normalized = re.sub(
+        r"^\s*\d+\s*[.)-]?\s*",
+        "",
+        normalized,
+    )
+
+    return normalized.strip()
 class ChangeClassificationService:
 
     def __init__(
@@ -139,12 +159,25 @@ class ChangeClassificationService:
         before_text: str,
         after_text: str,
     ) -> bool:
-        normalized_before = " ".join(
-            before_text.upper().split()
+        def normalize(text: str) -> str:
+            normalized = " ".join(
+                text.upper().split()
+            )
+
+            normalized = re.sub(
+                r"^\s*\d+\s*[.)-]?\s*",
+                "",
+                normalized,
+            )
+
+            return normalized.strip()
+
+        normalized_before = normalize(
+            before_text
         )
 
-        normalized_after = " ".join(
-            after_text.upper().split()
+        normalized_after = normalize(
+            after_text
         )
 
         return normalized_before == normalized_after
