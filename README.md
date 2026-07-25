@@ -1,3 +1,13 @@
+---
+title: Document Delta and Grounded Chat
+emoji: 📄
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # 📄 Document Delta & Grounded Chat
 
 An AI-assisted system for comparing technical document revisions and answering grounded questions over the detected changes.
