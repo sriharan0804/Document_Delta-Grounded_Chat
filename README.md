@@ -88,7 +88,7 @@ embedding models, or alignment strategies) without changing the rest of the pipe
 
 ## Repository Structure
 
-
+```text
 Document-Delta-Grounded-Chat/
 │
 ├── data/
@@ -122,6 +122,7 @@ Document-Delta-Grounded-Chat/
 ├── requirements.txt
 ├── README.md
 └── LICENSE
+```
 
 ## Technology Stack
 
