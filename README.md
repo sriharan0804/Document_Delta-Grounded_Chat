@@ -1,13 +1,3 @@
----
-title: Document Delta and Grounded Chat
-emoji: 📄
-colorFrom: blue
-colorTo: indigo
-sdk: docker
-app_port: 7860
-pinned: false
----
-
 # 📄 Document Delta & Grounded Chat
 
 An AI-assisted system for comparing technical document revisions and answering grounded questions over the detected changes.
@@ -17,6 +7,14 @@ The project extracts structured elements from engineering documents, aligns cont
 
 Built as part of an Applied AI engineering assessment, the system emphasizes modular architecture, reproducible evaluation, and explainable
  outputs rather than simple document diffing.
+
+## 🚀 Live Demo
+
+**Streamlit Application**
+https://documentdelta-groundedchat-mraztlvdajrhtw6czpw8bb.streamlit.app/
+
+**GitHub Repository**
+https://github.com/sriharan0804/Document_Delta-Grounded_Chat
 
 ## Overview
 
